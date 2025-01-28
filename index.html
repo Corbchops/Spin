@@ -72,6 +72,23 @@
             background-color: #0056b3;
         }
 
+        .filter-boxes {
+            margin: 1rem 0;
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-box {
+            background-color: #007BFF;
+            color: white;
+            padding: 0.3rem 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -141,6 +158,13 @@
         </div>
 
         <div id="collectionView" style="display: none;">
+            <div>
+                <input type="text" id="filterGenre" placeholder="Genre">
+                <input type="text" id="filterFormat" placeholder="Format (e.g., Vinyl, CD)">
+                <button onclick="applyFilters()">Apply Filters</button>
+                <button onclick="pickRandomAlbum()">Pick Random Album</button>
+            </div>
+            <div class="filter-boxes" id="currentFilters"></div>
             <div class="grid" id="userCollection"></div>
         </div>
     </div>
@@ -156,34 +180,52 @@
             },
         });
 
-        let collection = [];
-        let currentPage = 1;
+        let collection = JSON.parse(localStorage.getItem('music_collection')) || [];
+        let filteredCollection = [];
+        let currentFilters = {};
+
+        function saveCollection() {
+            localStorage.setItem('music_collection', JSON.stringify(collection));
+        }
 
         function switchTab(tab) {
             document.getElementById('searchView').style.display = tab === 'search' ? 'block' : 'none';
             document.getElementById('collectionView').style.display = tab === 'collection' ? 'block' : 'none';
             document.getElementById('searchTab').classList.toggle('active', tab === 'search');
             document.getElementById('collectionTab').classList.toggle('active', tab === 'collection');
-            if (tab === 'collection') {
-                displayAlbums(collection, false);
-            }
+            if (tab === 'collection') applyFilters();
         }
 
-        async function searchAlbums(page = 1) {
-            const query = document.getElementById('searchInput').value;
+        async function searchAlbums() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                alert('Please enter a search query.');
+                return;
+            }
+
             try {
                 const response = await axiosInstance.get('/database/search', {
                     params: {
                         q: query,
-                        page: page,
+                        type: 'release',
                         per_page: 24,
                         key: DISCOGS_API_KEY,
                         secret: DISCOGS_API_SECRET,
                     },
                 });
-                displayAlbums(response.data.results, true);
+
+                const albums = response.data.results.map(result => ({
+                    title: result.title || 'Unknown Title',
+                    year: result.year || 'Unknown Year',
+                    genre: result.genre || [],
+                    format: result.format || [],
+                    cover_image: result.cover_image || 'placeholder.jpg',
+                }));
+
+                displayAlbums(albums, true);
             } catch (error) {
                 console.error('Error fetching albums:', error);
+                alert('Failed to fetch albums. Please try again.');
             }
         }
 
@@ -191,15 +233,16 @@
             const grid = isSearch ? document.getElementById('catalogue') : document.getElementById('userCollection');
             grid.innerHTML = '';
 
-            albums.forEach(album => {
+            albums.forEach((album, index) => {
                 const card = document.createElement('div');
                 card.classList.add('album-card');
                 card.innerHTML = `
-                    <img src="${album.cover_image || 'placeholder.jpg'}" alt="${album.title}">
+                    <img src="${album.cover_image}" alt="${album.title}">
                     <h3>${album.title}</h3>
-                    <p>${album.year || 'Unknown Year'}</p>
-                    <p>${album.format ? album.format.join(', ') : 'Format Unknown'}</p>
+                    <p>${album.year}</p>
+                    <p>${album.format.join(', ') || 'Unknown Format'}</p>
                     ${isSearch ? `<button onclick="addToCollection(${JSON.stringify(album).replace(/"/g, '&quot;')})">Add to Collection</button>` : ''}
+                    ${!isSearch ? `<button onclick="removeFromCollection(${index})">Remove</button>` : ''}
                 `;
                 grid.appendChild(card);
             });
@@ -207,64 +250,47 @@
 
         function addToCollection(album) {
             collection.push(album);
+            saveCollection();
             alert(`${album.title} added to your collection!`);
         }
 
-        async function startScanner() {
-            const codeReader = new ZXing.BrowserBarcodeReader();
-            const videoElement = document.getElementById('video');
-            try {
-                await codeReader.decodeFromVideoDevice(null, videoElement, (result, error) => {
-                    if (result) {
-                        codeReader.reset();
-                        fetchAlbumByBarcode(result.text);
-                    }
-                    if (error) {
-                        console.error(error);
-                    }
-                });
-            } catch (error) {
-                console.error('Error starting scanner:', error);
-            }
+        function removeFromCollection(index) {
+            const albumToRemove = filteredCollection[index];
+            collection = collection.filter(
+                album =>
+                    album.title !== albumToRemove.title ||
+                    album.year !== albumToRemove.year ||
+                    album.format.toString() !== albumToRemove.format.toString()
+            );
+            saveCollection();
+            alert(`Removed: ${albumToRemove.title}`);
+            applyFilters();
         }
 
-        async function fetchAlbumByBarcode(barcode) {
-            try {
-                const response = await axiosInstance.get('/database/search', {
-                    params: {
-                        barcode: barcode,
-                        key: DISCOGS_API_KEY,
-                        secret: DISCOGS_API_SECRET,
-                    },
-                });
-                displayAlbums(response.data.results, true);
-            } catch (error) {
-                console.error('Error fetching album by barcode:', error);
-            }
+        function applyFilters() {
+            const genre = document.getElementById('filterGenre').value.toLowerCase();
+            const format = document.getElementById('filterFormat').value.toLowerCase();
+
+            currentFilters = { genre, format };
+
+            filteredCollection = collection.filter(album => {
+                const matchesGenre = genre ? (album.genre || []).some(g => g.toLowerCase().includes(genre)) : true;
+                const matchesFormat = format ? (album.format || []).some(f => f.toLowerCase().includes(format)) : true;
+                return matchesGenre && matchesFormat;
+            });
+
+            displayAlbums(filteredCollection, false);
         }
 
-        async function randomAlbum() {
-            const query = document.getElementById('searchInput').value;
-            const filter = document.getElementById('filterType').value;
-            try {
-                const response = await axiosInstance.get('/database/search', {
-                    params: {
-                        q: query,
-                        format: filter,
-                        key: DISCOGS_API_KEY,
-                        secret: DISCOGS_API_SECRET,
-                    },
-                });
-                const albums = response.data.results;
-                if (albums.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * albums.length);
-                    alert(`Random Album: ${albums[randomIndex].title}`);
-                } else {
-                    alert('No albums match the selected filter.');
-                }
-            } catch (error) {
-                console.error('Error fetching random album:', error);
+        function pickRandomAlbum() {
+            const activeCollection = filteredCollection.length ? filteredCollection : collection;
+            if (activeCollection.length === 0) {
+                alert('No albums match your criteria.');
+                return;
             }
+            const randomIndex = Math.floor(Math.random() * activeCollection.length);
+            const randomAlbum = activeCollection[randomIndex];
+            alert(`Random Album: ${randomAlbum.title} (${randomAlbum.year})`);
         }
     </script>
 </body>
