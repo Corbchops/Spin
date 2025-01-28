@@ -292,6 +292,57 @@
             const randomAlbum = activeCollection[randomIndex];
             alert(`Random Album: ${randomAlbum.title} (${randomAlbum.year})`);
         }
+
+        async function startScanner() {
+            const codeReader = new ZXing.BrowserBarcodeReader();
+            const videoElement = document.getElementById('video');
+
+            try {
+                await codeReader.decodeFromVideoDevice(null, videoElement, (result, error) => {
+                    if (result) {
+                        codeReader.reset();
+                        alert(`Barcode Scanned: ${result.text}`);
+                        fetchAlbumByBarcode(result.text);
+                    }
+                    if (error && !(error instanceof ZXing.NotFoundException)) {
+                        console.error('Barcode scanning error:', error);
+                    }
+                });
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                alert('Failed to access the camera. Please ensure you have granted camera permissions.');
+            }
+        }
+
+        async function fetchAlbumByBarcode(barcode) {
+            try {
+                const response = await axiosInstance.get('/database/search', {
+                    params: {
+                        barcode: barcode,
+                        type: 'release',
+                        key: DISCOGS_API_KEY,
+                        secret: DISCOGS_API_SECRET,
+                    },
+                });
+
+                const albums = response.data.results.map(result => ({
+                    title: result.title || 'Unknown Title',
+                    year: result.year || 'Unknown Year',
+                    genre: result.genre || [],
+                    format: result.format || [],
+                    cover_image: result.cover_image || 'placeholder.jpg',
+                }));
+
+                if (albums.length > 0) {
+                    displayAlbums(albums, true);
+                } else {
+                    alert('No albums found for the scanned barcode.');
+                }
+            } catch (error) {
+                console.error('Error fetching album by barcode:', error);
+                alert('Failed to fetch album details. Please try again.');
+            }
+        }
     </script>
 </body>
 </html>
