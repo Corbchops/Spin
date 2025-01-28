@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Music Collection</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+
+        .header {
+            background-color: #333;
+            color: white;
+            padding: 1rem;
+        }
+
+        .container {
+            padding: 1rem;
+        }
+
+        .tab-bar {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .tab-bar button {
+            padding: 0.5rem 1rem;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 0 0.5rem;
+        }
+
+        .tab-bar button.active {
+            background-color: #0056b3;
+        }
+
+        .search-bar {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-bar input {
+            flex: 1;
+            max-width: 300px;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .search-bar button {
+            padding: 0.5rem 1rem;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .search-bar button:hover {
+            background-color: #0056b3;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .album-card {
+            background: white;
+            padding: 0.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 0.8rem;
+        }
+
+        .album-card img {
+            width: 100%;
+            max-width: 100px;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .album-card h3 {
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .album-card p {
+            margin: 0;
+            color: #555;
+            font-size: 0.8rem;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 1rem;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>My Music Collection</h1>
+    </div>
+
+    <div class="container">
+        <div class="tab-bar">
+            <button id="searchTab" class="active" onclick="switchTab('search')">Search</button>
+            <button id="collectionTab" onclick="switchTab('collection')">Collection</button>
+        </div>
+
+        <div id="searchView">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Search by album, artist, or genre...">
+                <button onclick="searchAlbums()">Search</button>
+            </div>
+
+            <div id="videoScanner">
+                <video id="video" autoplay></video>
+                <button onclick="startScanner()">Scan Barcode</button>
+            </div>
+
+            <div class="grid" id="catalogue"></div>
+        </div>
+
+        <div id="collectionView" style="display: none;">
+            <div class="grid" id="userCollection"></div>
+        </div>
+    </div>
+
+    <script>
+        const DISCOGS_API_KEY = 'YbIoxUTjiOnwgWuNEptY';
+        const DISCOGS_API_SECRET = 'ytOUDXwTosfGwtkkOQQpYYtevZWCBufF';
+
+        const axiosInstance = axios.create({
+            baseURL: 'https://api.discogs.com',
+            headers: {
+                'User-Agent': 'MyMusicCollection/1.0 +http://mymusiccollection.com',
+            },
+        });
+
+        let collection = [];
+        let currentPage = 1;
+
+        function switchTab(tab) {
+            document.getElementById('searchView').style.display = tab === 'search' ? 'block' : 'none';
+            document.getElementById('collectionView').style.display = tab === 'collection' ? 'block' : 'none';
+            document.getElementById('searchTab').classList.toggle('active', tab === 'search');
+            document.getElementById('collectionTab').classList.toggle('active', tab === 'collection');
+            if (tab === 'collection') {
+                displayAlbums(collection, false);
+            }
+        }
+
+        async function searchAlbums(page = 1) {
+            const query = document.getElementById('searchInput').value;
+            try {
+                const response = await axiosInstance.get('/database/search', {
+                    params: {
+                        q: query,
+                        page: page,
+                        per_page: 24,
+                        key: DISCOGS_API_KEY,
+                        secret: DISCOGS_API_SECRET,
+                    },
+                });
+                displayAlbums(response.data.results, true);
+            } catch (error) {
+                console.error('Error fetching albums:', error);
+            }
+        }
+
+        function displayAlbums(albums, isSearch = false) {
+            const grid = isSearch ? document.getElementById('catalogue') : document.getElementById('userCollection');
+            grid.innerHTML = '';
+
+            albums.forEach(album => {
+                const card = document.createElement('div');
+                card.classList.add('album-card');
+                card.innerHTML = `
+                    <img src="${album.cover_image || 'placeholder.jpg'}" alt="${album.title}">
+                    <h3>${album.title}</h3>
+                    <p>${album.year || 'Unknown Year'}</p>
+                    <p>${album.format ? album.format.join(', ') : 'Format Unknown'}</p>
+                    ${isSearch ? `<button onclick="addToCollection(${JSON.stringify(album).replace(/"/g, '&quot;')})">Add to Collection</button>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function addToCollection(album) {
+            collection.push(album);
+            alert(`${album.title} added to your collection!`);
+        }
+
+        async function startScanner() {
+            const codeReader = new ZXing.BrowserBarcodeReader();
+            const videoElement = document.getElementById('video');
+            try {
+                await codeReader.decodeFromVideoDevice(null, videoElement, (result, error) => {
+                    if (result) {
+                        codeReader.reset();
+                        fetchAlbumByBarcode(result.text);
+                    }
+                    if (error) {
+                        console.error(error);
+                    }
+                });
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+            }
+        }
+
+        async function fetchAlbumByBarcode(barcode) {
+            try {
+                const response = await axiosInstance.get('/database/search', {
+                    params: {
+                        barcode: barcode,
+                        key: DISCOGS_API_KEY,
+                        secret: DISCOGS_API_SECRET,
+                    },
+                });
+                displayAlbums(response.data.results, true);
+            } catch (error) {
+                console.error('Error fetching album by barcode:', error);
+            }
+        }
+
+        async function randomAlbum() {
+            const query = document.getElementById('searchInput').value;
+            const filter = document.getElementById('filterType').value;
+            try {
+                const response = await axiosInstance.get('/database/search', {
+                    params: {
+                        q: query,
+                        format: filter,
+                        key: DISCOGS_API_KEY,
+                        secret: DISCOGS_API_SECRET,
+                    },
+                });
+                const albums = response.data.results;
+                if (albums.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * albums.length);
+                    alert(`Random Album: ${albums[randomIndex].title}`);
+                } else {
+                    alert('No albums match the selected filter.');
+                }
+            } catch (error) {
+                console.error('Error fetching random album:', error);
+            }
+        }
+    </script>
+</body>
+</html>
