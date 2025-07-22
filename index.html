@@ -362,6 +362,7 @@ video:hover {
       <button onclick="applyFilters()">Apply</button>
       <button onclick="pickRandomAlbum()">Pick Random</button>
     </div>
+    <div id="albumCount" style="text-align:center; margin-bottom: 0.8rem; font-weight: 600; color: var(--accent-light);"></div>
     <div class="grid" id="userCollection"></div>
   </div>
 
@@ -541,20 +542,22 @@ video:hover {
     }
 
     function applyFilters() {
-      const genre = document.getElementById('filterGenre').value.trim().toLowerCase();
-      const artist = document.getElementById('filterArtist').value.trim().toLowerCase();
-      const format = document.getElementById('filterFormat').value.trim().toLowerCase();
+  const genre = document.getElementById('filterGenre').value.trim().toLowerCase();
+  const artist = document.getElementById('filterArtist').value.trim().toLowerCase();
+  const format = document.getElementById('filterFormat').value.trim().toLowerCase();
 
-      filteredCollection = collection.filter(album => {
-        const genreMatch = genre ? album.genre.some(g => g.toLowerCase().includes(genre)) : true;
-        const artistMatch = artist ? album.title.toLowerCase().includes(artist) : true;
-        const formatMatch = format ? album.format.some(f => f.toLowerCase().includes(format)) : true;
-        return genreMatch && artistMatch && formatMatch;
-      });
+  filteredCollection = collection.filter(album => {
+    const genreMatch = genre ? album.genre.some(g => g.toLowerCase().includes(genre)) : true;
+    const artistMatch = artist ? album.artist.toLowerCase().includes(artist) : true;  // fixed artist check here
+    const formatMatch = format ? album.format.some(f => f.toLowerCase().includes(format)) : true;
+    return genreMatch && artistMatch && formatMatch;
+  });
 
-      displayAlbums(filteredCollection, false);
-    }
+  // Show count of filtered albums
+  document.getElementById('albumCount').textContent = `Albums found: ${filteredCollection.length}`;
 
+  displayAlbums(filteredCollection, false);
+}
     function pickRandomAlbum() {
       const pool = filteredCollection.length ? filteredCollection : collection;
       if (pool.length === 0) {
