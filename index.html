@@ -547,7 +547,15 @@ video:hover {
   const format = document.getElementById('filterFormat').value.trim().toLowerCase();
 
   filteredCollection = collection.filter(album => {
-    const genreMatch = genre ? album.genre.some(g => g.toLowerCase().includes(genre)) : true;
+    const genreMatch = genre
+  ? (
+      album.genre &&
+      album.genre
+        .toLowerCase()
+        .split(/[,/|]/) // split by comma, slash, or pipe if your genres are like "Rock/Progressive"
+        .some(g => g.trim().includes(genre))
+    )
+  : true;
     const artistMatch = artist
   ? (
       (album.artist && album.artist.toLowerCase().includes(artist)) ||
