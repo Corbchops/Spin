@@ -543,8 +543,12 @@ video:hover {
       card.classList.add('popout');
 
       card.addEventListener('animationend', () => {
-        filteredCollection.splice(index, 1);
-        collection = [...filteredCollection];
+        const albumToRemove = filteredCollection[index];
+        collection = collection.filter(album => {
+        return !(album.title === albumToRemove.title &&
+                 album.artist === albumToRemove.artist &&
+                 album.year === albumToRemove.year);
+        });
         saveCollection();
         applyFilters();
         showNotification('Album removed from your collection.');
