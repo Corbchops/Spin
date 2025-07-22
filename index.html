@@ -548,7 +548,12 @@ video:hover {
 
   filteredCollection = collection.filter(album => {
     const genreMatch = genre ? album.genre.some(g => g.toLowerCase().includes(genre)) : true;
-    const artistMatch = artist ? album.artist.toLowerCase().includes(artist) : true;  // fixed artist check here
+    const artistMatch = artist
+  ? (
+      (album.artist && album.artist.toLowerCase().includes(artist)) ||
+      (album.title && album.title.toLowerCase().includes(artist))
+    )
+  : true;
     const formatMatch = format ? album.format.some(f => f.toLowerCase().includes(format)) : true;
     return genreMatch && artistMatch && formatMatch;
   });
