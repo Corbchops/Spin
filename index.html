@@ -356,13 +356,6 @@ video:hover {
   </div>
 
   <div class="container" id="collectionView" style="display: none;">
-    <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
-      <label for="columnViewSelect" style="margin-right: 0.5rem; user-select:none;">View Columns:</label>
-      <select id="columnViewSelect" onchange="changeGridColumns()" style="background:#444; color:#f0f0f0; border:none; border-radius:4px; padding:0.3rem 0.6rem; font-weight:bold; cursor:pointer;">
-      <option value="1">1 Column</option>
-      <option value="2" selected>2 Columns</option>
-      </select>
-    </div>
     <div class="filter-controls">
       <input type="text" id="filterArtist" placeholder="Filter by Artist">
       <input type="text" id="filterGenre" placeholder="Filter by Genre">
@@ -629,20 +622,7 @@ video:hover {
     // Initialize collection view on load
     window.addEventListener('load', () => {
       applyFilters();
-      changeGridColumns();
     });
-    function changeGridColumns() {
-  const select = document.getElementById('columnViewSelect');
-  const userCollectionGrid = document.getElementById('userCollection');
-  const cols = select.value;
-
-  if (cols === '1') {
-    userCollectionGrid.style.gridTemplateColumns = '1fr';
-  } else if (cols === '2') {
-    userCollectionGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-  }
-      
-}
   </script>
 </body>
 </html>
