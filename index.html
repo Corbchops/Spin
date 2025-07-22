@@ -383,11 +383,6 @@ video:hover {
     let collection = JSON.parse(localStorage.getItem('music_collection')) || [];
     let filteredCollection = [];
 
-    function hasCommonFormat(f1, f2) {
-  if (!Array.isArray(f1) || !Array.isArray(f2)) return false;
-  return f1.some(format1 => f2.some(format2 => format1.toLowerCase() === format2.toLowerCase()));
-}
-
     function saveCollection() {
       localStorage.setItem('music_collection', JSON.stringify(collection));
     }
@@ -458,14 +453,13 @@ video:hover {
         });
 
         const albums = response.data.results.map(r => ({
-  id: r.id,  // Add this line to get unique ID
-  title: r.title || 'Unknown Title',
-  year: r.year || 'Unknown Year',
-  genre: r.genre || [],
-  artist: r.artist || 'Unknown Artist',
-  format: r.format || [],
-  cover_image: r.cover_image || 'https://via.placeholder.com/100x100',
-}));
+          title: r.title || 'Unknown Title',
+          year: r.year || 'Unknown Year',
+          genre: r.genre || [],
+          artist: r.artist || 'Unknown Artist',
+          format: r.format || [],
+          cover_image: r.cover_image || 'https://via.placeholder.com/100x100',
+        }));
 
         displayAlbums(albums, true);
       } catch {
@@ -478,17 +472,7 @@ video:hover {
       grid.innerHTML = '';
 
       albums.forEach((album, index) => {
-        const isAdded = collection.some(col => col.id === album.id);
-        if (isSearch) {
-        const addButtons = document.querySelectorAll('.add-button');
-        addButtons.forEach(button => {
-        button.addEventListener('click', () => {
-        const idx = parseInt(button.getAttribute('data-index'));
-        const album = albums[idx];
-        handleAddButtonClick(button, album);
-    });
-  });
-}
+        const isAdded = collection.some(col => col.title === album.title && col.artist === album.artist && col.year === album.year);
         const card = document.createElement('div');
         card.className = 'album-card';
         card.dataset.index = index;
@@ -499,10 +483,10 @@ video:hover {
             buttonHTML = `<button disabled style="background:#666666; cursor:default;">✔ Added</button>`;
           } else {
             // Use data-index attribute to find card in handler
-            buttonHTML = `<button class="add-button" data-index="${index}">Add</button>`;
+            buttonHTML = `<button onclick='handleAddButtonClick(this, ${JSON.stringify(album).replace(/'/g, "\\'").replace(/"/g, '&quot;')})'>Add</button>`;
           }
         } else {
-          buttonHTML = `<button onclick="removeFromCollection('${album.id}', this)">Remove</button>`;
+          buttonHTML = `<button onclick="removeFromCollection(${index}, this)">Remove</button>`;
         }
 
         card.innerHTML = `
@@ -538,28 +522,25 @@ video:hover {
     }
 
     function addToCollection(album) {
-  // Prevent duplicates by checking id before adding
-  if (!collection.some(item => item.id === album.id)) {
-    collection.push(album);
-    saveCollection();
-  } else {
-    showNotification('Album already in your collection.');
-  }
-}
+      collection.push(album);
+      saveCollection();
+      // No notification on add, per instructions
+    }
 
-    function removeFromCollection(albumId, buttonElement) {
-  const card = buttonElement.closest('.album-card');
-  card.classList.add('popout');
+    function removeFromCollection(index, buttonElement) {
+      const grid = document.getElementById('userCollection');
+      const card = buttonElement.closest('.album-card');
 
-  card.addEventListener('animationend', () => {
-    // Remove only the album with matching id from collection
-    collection = collection.filter(album => album.id !== albumId);
-    saveCollection();
-    applyFilters();
-    showNotification('Album removed from your collection.');
-  }, { once: true });
-}
+      card.classList.add('popout');
 
+      card.addEventListener('animationend', () => {
+        filteredCollection.splice(index, 1);
+        collection = [...filteredCollection];
+        saveCollection();
+        applyFilters();
+        showNotification('Album removed from your collection.');
+      }, { once: true });
+    }
 
     function applyFilters() {
   const genre = document.getElementById('filterGenre').value.trim().toLowerCase();
@@ -620,14 +601,14 @@ video:hover {
         });
 
         const results = response.data.results.map(r => ({
-  id: r.id,  // Add this line for unique ID
-  title: r.title,
-  year: r.year,
-  genre: r.genre || [],
-  artist: r.artist || 'Unknown',
-  format: r.format || [],
-  cover_image: r.cover_image || 'https://via.placeholder.com/100',
-}));
+          title: r.title,
+          year: r.year,
+          genre: r.genre || [],
+          artist: r.artist || 'Unknown',
+          format: r.format || [],
+          cover_image: r.cover_image || 'https://via.placeholder.com/100',
+        }));
+
         if (results.length) {
           displayAlbums(results, true);
         } else {
