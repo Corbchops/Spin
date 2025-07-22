@@ -528,19 +528,28 @@ video:hover {
     }
 
     function removeFromCollection(index, buttonElement) {
-      const grid = document.getElementById('userCollection');
-      const card = buttonElement.closest('.album-card');
+  const card = buttonElement.closest('.album-card');
+  
+  card.classList.add('popout');
 
-      card.classList.add('popout');
+  card.addEventListener('animationend', () => {
+    // Get the album to remove from filteredCollection by index
+    const albumToRemove = filteredCollection[index];
+    if (!albumToRemove) return;
 
-      card.addEventListener('animationend', () => {
-        filteredCollection.splice(index, 1);
-        collection = [...filteredCollection];
-        saveCollection();
-        applyFilters();
-        showNotification('Album removed from your collection.');
-      }, { once: true });
-    }
+    // Remove album from main collection by matching unique properties
+    collection = collection.filter(album =>
+      !(album.title === albumToRemove.title &&
+        album.artist === albumToRemove.artist &&
+        album.year === albumToRemove.year)
+    );
+
+    saveCollection();
+    applyFilters();
+    showNotification('Album removed from your collection.');
+  }, { once: true });
+}
+
 
     function applyFilters() {
   const genre = document.getElementById('filterGenre').value.trim().toLowerCase();
