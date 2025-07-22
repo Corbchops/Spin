@@ -458,13 +458,14 @@ video:hover {
         });
 
         const albums = response.data.results.map(r => ({
-          title: r.title || 'Unknown Title',
-          year: r.year || 'Unknown Year',
-          genre: r.genre || [],
-          artist: r.artist || 'Unknown Artist',
-          format: r.format || [],
-          cover_image: r.cover_image || 'https://via.placeholder.com/100x100',
-        }));
+  id: r.id,  // Add this line for unique ID
+  title: r.title || 'Unknown Title',
+  year: r.year || 'Unknown Year',
+  genre: r.genre || [],
+  artist: r.artist || 'Unknown Artist',
+  format: r.format || [],
+  cover_image: r.cover_image || 'https://via.placeholder.com/100x100',
+}));
 
         displayAlbums(albums, true);
       } catch {
@@ -477,12 +478,7 @@ video:hover {
       grid.innerHTML = '';
 
       albums.forEach((album, index) => {
-        const isAdded = collection.some(col =>
-        col.title === album.title &&
-        col.artist === album.artist &&
-        (col.year === album.year || !album.year || !col.year) &&
-        hasCommonFormat(col.format, album.format)
-        );
+        const isAdded = collection.some(col => col.id === album.id);
         if (isSearch) {
         const addButtons = document.querySelectorAll('.add-button');
         addButtons.forEach(button => {
@@ -630,14 +626,14 @@ video:hover {
         });
 
         const results = response.data.results.map(r => ({
-          title: r.title,
-          year: r.year,
-          genre: r.genre || [],
-          artist: r.artist || 'Unknown',
-          format: r.format || [],
-          cover_image: r.cover_image || 'https://via.placeholder.com/100',
-        }));
-
+  id: r.id,  // Add this line for unique ID
+  title: r.title,
+  year: r.year,
+  genre: r.genre || [],
+  artist: r.artist || 'Unknown',
+  format: r.format || [],
+  cover_image: r.cover_image || 'https://via.placeholder.com/100',
+}));
         if (results.length) {
           displayAlbums(results, true);
         } else {
