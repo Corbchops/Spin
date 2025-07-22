@@ -483,6 +483,16 @@ video:hover {
         (col.year === album.year || !album.year || !col.year) &&
         hasCommonFormat(col.format, album.format)
         );
+        if (isSearch) {
+        const addButtons = document.querySelectorAll('.add-button');
+        addButtons.forEach(button => {
+        button.addEventListener('click', () => {
+        const idx = parseInt(button.getAttribute('data-index'));
+        const album = albums[idx];
+        handleAddButtonClick(button, album);
+    });
+  });
+}
         const card = document.createElement('div');
         card.className = 'album-card';
         card.dataset.index = index;
@@ -493,7 +503,7 @@ video:hover {
             buttonHTML = `<button disabled style="background:#666666; cursor:default;">✔ Added</button>`;
           } else {
             // Use data-index attribute to find card in handler
-            buttonHTML = `<button onclick='handleAddButtonClick(this, ${JSON.stringify(album).replace(/'/g, "\\'").replace(/"/g, '&quot;')})'>Add</button>`;
+            buttonHTML = `<button class="add-button" data-index="${index}">Add</button>`;
           }
         } else {
           buttonHTML = `<button onclick="removeFromCollection(${index}, this)">Remove</button>`;
