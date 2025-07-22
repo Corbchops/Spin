@@ -629,7 +629,20 @@ video:hover {
     // Initialize collection view on load
     window.addEventListener('load', () => {
       applyFilters();
+      changeGridColumns();
     });
+    function changeGridColumns() {
+  const select = document.getElementById('columnViewSelect');
+  const userCollectionGrid = document.getElementById('userCollection');
+  const cols = select.value;
+
+  if (cols === '1') {
+    userCollectionGrid.style.gridTemplateColumns = '1fr';
+  } else if (cols === '2') {
+    userCollectionGrid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+  }
+      
+}
   </script>
 </body>
 </html>
