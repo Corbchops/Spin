@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <title>My Music Collection</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
@@ -22,13 +24,25 @@
     }
 
     body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: var(--bg-color);
-      color: var(--white);
-      padding-bottom: 3rem;
-    }
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--white);
+  padding-bottom: 3rem;
+}
+    header {
+  font-family: 'Bebas Neue', cursive;
+}
 
+.tab-button,
+.search-controls button,
+.filter-controls button,
+.album-card button,
+.album-card h3,
+.album-card p,
+input {
+  font-family: 'Inter', sans-serif;
+}
     header {
       background-color: var(--card-color);
       padding: 1rem;
