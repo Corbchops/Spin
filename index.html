@@ -458,7 +458,7 @@ video:hover {
         });
 
         const albums = response.data.results.map(r => ({
-  id: r.id,  // Add this line for unique ID
+  id: r.id,  // Add this line to get unique ID
   title: r.title || 'Unknown Title',
   year: r.year || 'Unknown Year',
   genre: r.genre || [],
@@ -502,7 +502,7 @@ video:hover {
             buttonHTML = `<button class="add-button" data-index="${index}">Add</button>`;
           }
         } else {
-          buttonHTML = `<button onclick="removeFromCollection(${index}, this)">Remove</button>`;
+          buttonHTML = `<button onclick="removeFromCollection('${album.id}', this)">Remove</button>`;
         }
 
         card.innerHTML = `
@@ -538,28 +538,22 @@ video:hover {
     }
 
     function addToCollection(album) {
-      collection.push(album);
-      saveCollection();
-      // No notification on add, per instructions
-    }
+  // Prevent duplicates by checking id before adding
+  if (!collection.some(item => item.id === album.id)) {
+    collection.push(album);
+    saveCollection();
+  } else {
+    showNotification('Album already in your collection.');
+  }
+}
 
-    function removeFromCollection(index, buttonElement) {
+    function removeFromCollection(albumId, buttonElement) {
   const card = buttonElement.closest('.album-card');
-  
   card.classList.add('popout');
 
   card.addEventListener('animationend', () => {
-    // Get the album to remove from filteredCollection by index
-    const albumToRemove = filteredCollection[index];
-    if (!albumToRemove) return;
-
-    // Remove album from main collection by matching unique properties
-    collection = collection.filter(album =>
-      !(album.title === albumToRemove.title &&
-        album.artist === albumToRemove.artist &&
-        album.year === albumToRemove.year)
-    );
-
+    // Remove only the album with matching id from collection
+    collection = collection.filter(album => album.id !== albumId);
     saveCollection();
     applyFilters();
     showNotification('Album removed from your collection.');
