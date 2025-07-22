@@ -196,95 +196,69 @@ input {
       box-shadow: 0 0 10px #666666;
     }
 
-    .cassette-frame {
-  position: relative;
-  width: 90vw;
+    video {
+  width: 100%;
   max-width: 400px;
   margin: 2rem auto 1rem;
-  border-radius: 16px;
-  background: #111;
-  box-shadow:
-    inset 0 4px 0 #444,
-    inset 0 -4px 0 #444,
-    inset 8px 0 0 #555,
-    inset -8px 0 0 #555,
-    0 0 15px var(--primary);
-  overflow: visible;
-  touch-action: manipulation;
-}
-
-.cassette-frame video {
-  width: 100%;
-  height: auto;
-  border-radius: 16px;
   display: block;
-  min-height: 220px;
-  background: #000;
-  user-select: none;
-  pointer-events: none;
+  border: 4px dashed var(--primary);
+  border-radius: 12px;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--bg-color),
+    var(--bg-color) 10px,
+    #333333 10px,
+    #333333 20px
+  );
+  box-shadow: 0 0 20px rgba(74, 144, 226, 0.5), 0 0 10px rgba(255, 255, 255, 0.1) inset;
+  position: relative;
+  transition: transform 0.3s ease;
 }
 
-/* Cassette tape holes on left and right */
-.cassette-frame::before,
-.cassette-frame::after {
-  content: "";
+video::before {
+  content: '📷 Scan your barcode below!';
   position: absolute;
-  top: 50%;
-  width: 20px;
-  height: 20px;
-  background: var(--bg-color);
-  border: 3px solid var(--primary);
-  border-radius: 50%;
-  box-shadow: 0 0 8px var(--primary);
-  transform: translateY(-50%);
-  z-index: 2;
-}
-
-.cassette-frame::before {
-  left: -30px;
-}
-
-.cassette-frame::after {
-  right: -30px;
-}
-
-/* Label above the cassette frame */
-.cassette-frame .label {
-  position: absolute;
-  top: -2.8rem;
+  top: -1.8rem;
   left: 50%;
   transform: translateX(-50%);
   background: var(--card-color);
   padding: 0.3rem 1rem;
-  font-weight: 700;
+  font-weight: bold;
   color: var(--accent-light);
-  border-radius: 24px;
-  font-size: 1.1rem;
-  z-index: 3;
-  white-space: nowrap;
-  user-select: none;
+  border-radius: 20px;
+  font-size: 1rem;
+  z-index: 1;
 }
 
-/* Responsive tweaks for small screens */
-@media (max-width: 480px) {
-  .cassette-frame {
-    min-height: 250px;
-  }
-  .cassette-frame::before,
-  .cassette-frame::after {
-    width: 18px;
-    height: 18px;
-    border-width: 2.5px;
-    left: -26px;
-    right: -26px;
-  }
-  .cassette-frame .label {
-    font-size: 1.3rem;
-    padding: 0.5rem 1.2rem;
-    top: -3rem;
-  }
+video:hover {
+  transform: scale(1.02);
 }
 
+    @media screen and (max-width: 600px) {
+      .tab-bar {
+        flex-direction: column;
+      }
+
+      .search-controls input, .filter-controls input {
+        max-width: none;
+      }
+
+      /* Make album cards bigger on mobile for easier tapping */
+      .album-card {
+        padding: 1.2rem;
+      }
+      .album-card h3, .album-card p {
+        font-size: 1.3rem;
+      }
+      .album-card button {
+        font-size: 1.1rem;
+        padding: 0.7rem 1rem;
+      }
+      .grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.2rem;
+      }
+    }
 
     /* Animations */
 
@@ -376,10 +350,7 @@ input {
       <button onclick="searchAlbums()">Search</button>
       <button onclick="startScanner()">Scan Barcode</button>
     </div>
-    <div class="cassette-frame">
-  <div class="label">📼 Scan your barcode</div>
-  <video id="video" autoplay muted playsinline></video>
-</div>
+    <video id="video" autoplay muted playsinline></video>
     <div class="grid" id="catalogue"></div>
   </div>
 
