@@ -383,6 +383,11 @@ video:hover {
     let collection = JSON.parse(localStorage.getItem('music_collection')) || [];
     let filteredCollection = [];
 
+    function hasCommonFormat(f1, f2) {
+  if (!Array.isArray(f1) || !Array.isArray(f2)) return false;
+  return f1.some(format1 => f2.some(format2 => format1.toLowerCase() === format2.toLowerCase()));
+}
+
     function saveCollection() {
       localStorage.setItem('music_collection', JSON.stringify(collection));
     }
@@ -472,7 +477,12 @@ video:hover {
       grid.innerHTML = '';
 
       albums.forEach((album, index) => {
-        const isAdded = collection.some(col => col.title === album.title && col.artist === album.artist && col.year === album.year);
+        const isAdded = collection.some(col =>
+        col.title === album.title &&
+        col.artist === album.artist &&
+        (col.year === album.year || !album.year || !col.year) &&
+        hasCommonFormat(col.format, album.format)
+        );
         const card = document.createElement('div');
         card.className = 'album-card';
         card.dataset.index = index;
