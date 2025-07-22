@@ -540,25 +540,29 @@ video:hover {
       }, { once: true });
     }
 
-   function applyFilters() {
+  function applyFilters() {
   const genreInput = document.getElementById('filterGenre').value.trim().toLowerCase();
   const artistInput = document.getElementById('filterArtist').value.trim().toLowerCase();
   const formatInput = document.getElementById('filterFormat').value.trim().toLowerCase();
 
   filteredCollection = collection.filter(album => {
-    // Genre matching: split input into words, all must match at least one genre item
+    // Genre filter: match if any genre includes the full input OR input is substring of any genre (partial matching)
+    // Also match if input contains multiple words separated by spaces — all words must match something in genres
     const genreMatch = genreInput
-      ? genreInput.split(/\s+/).every(word =>
-          album.genre.some(g => g.toLowerCase().includes(word))
-        )
+      ? genreInput
+          .split(/\s+/)
+          .every(word =>
+            album.genre.some(g => g.toLowerCase().includes(word))
+          )
       : true;
 
-    // Artist matching - corrected to check artist instead of title
+    // Artist filter: if artist is known, check artist field; else fallback to unknown artist (match fails if user input is not unknown)
+    const artistLower = album.artist ? album.artist.toLowerCase() : 'unknown artist';
     const artistMatch = artistInput
-      ? album.artist.toLowerCase().includes(artistInput)
+      ? artistLower.includes(artistInput)
       : true;
 
-    // Format matching remains the same
+    // Format filter remains the same
     const formatMatch = formatInput
       ? album.format.some(f => f.toLowerCase().includes(formatInput))
       : true;
