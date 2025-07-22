@@ -196,30 +196,37 @@ input {
       box-shadow: 0 0 10px #666666;
     }
 
-    video {
-  width: 90vw;           /* fills most of mobile width */
+    .cassette-frame {
+  position: relative;
+  width: 90vw;
   max-width: 400px;
   margin: 2rem auto 1rem;
-  display: block;
-  position: relative;
   border-radius: 16px;
   background: #111;
-  min-height: 220px;
-  touch-action: manipulation;
-  overflow: visible;
-
-  /* Cassette tape frame - using multiple box shadows to simulate tape edges */
   box-shadow:
-    inset 0 4px 0 #444,              /* top tape edge */
-    inset 0 -4px 0 #444,             /* bottom tape edge */
-    inset 8px 0 0 #555,              /* left tape edge */
-    inset -8px 0 0 #555,             /* right tape edge */
-    0 0 15px var(--primary);         /* outer glow */
+    inset 0 4px 0 #444,
+    inset 0 -4px 0 #444,
+    inset 8px 0 0 #555,
+    inset -8px 0 0 #555,
+    0 0 15px var(--primary);
+  overflow: visible;
+  touch-action: manipulation;
 }
 
-/* Add cassette tape “holes” on the left and right edges */
-video::before,
-video::after {
+.cassette-frame video {
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  display: block;
+  min-height: 220px;
+  background: #000;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Cassette tape holes on left and right */
+.cassette-frame::before,
+.cassette-frame::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -233,19 +240,18 @@ video::after {
   z-index: 2;
 }
 
-video::before {
+.cassette-frame::before {
   left: -30px;
 }
 
-video::after {
+.cassette-frame::after {
   right: -30px;
 }
 
-/* Label above the video */
-video::before {
-  content: '📼 Scan your barcode';
+/* Label above the cassette frame */
+.cassette-frame .label {
   position: absolute;
-  top: -2.4rem;
+  top: -2.8rem;
   left: 50%;
   transform: translateX(-50%);
   background: var(--card-color);
@@ -259,21 +265,23 @@ video::before {
   user-select: none;
 }
 
+/* Responsive tweaks for small screens */
 @media (max-width: 480px) {
-  video {
+  .cassette-frame {
     min-height: 250px;
   }
-  video::before {
-    font-size: 1.3rem;
-    padding: 0.5rem 1.2rem;
-  }
-  video::before,
-  video::after {
+  .cassette-frame::before,
+  .cassette-frame::after {
     width: 18px;
     height: 18px;
     border-width: 2.5px;
     left: -26px;
     right: -26px;
+  }
+  .cassette-frame .label {
+    font-size: 1.3rem;
+    padding: 0.5rem 1.2rem;
+    top: -3rem;
   }
 }
 
@@ -368,7 +376,10 @@ video::before {
       <button onclick="searchAlbums()">Search</button>
       <button onclick="startScanner()">Scan Barcode</button>
     </div>
-    <video id="video" autoplay muted playsinline></video>
+    <div class="cassette-frame">
+  <div class="label">📼 Scan your barcode</div>
+  <video id="video" autoplay muted playsinline></video>
+</div>
     <div class="grid" id="catalogue"></div>
   </div>
 
