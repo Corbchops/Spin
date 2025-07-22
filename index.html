@@ -106,9 +106,10 @@
       border-radius: 8px;
       text-align: center;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.4s ease;
       cursor: pointer;
       user-select: none;
+      position: relative;
     }
     .album-card:hover,
     .album-card:focus-within {
@@ -119,6 +120,10 @@
 
     .album-card.pulse {
       animation: pulse 0.6s ease forwards;
+    }
+
+    .album-card.popout {
+      animation: popoutFade 0.4s forwards;
     }
 
     .album-card img {
@@ -140,6 +145,10 @@
       font-size: 0.9rem;
       padding: 0.5rem 0.8rem;
       user-select: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .button-shake {
@@ -230,6 +239,20 @@
       40%, 80% { transform: translateX(6px); }
     }
 
+    @keyframes popoutFade {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(1.2);
+        height: 0;
+        margin: 0;
+        padding: 0;
+      }
+    }
+
     /* Notification container and style */
     #notification {
       position: fixed;
@@ -250,10 +273,21 @@
       max-width: 90vw;
       text-align: center;
       user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      justify-content: center;
     }
     #notification.show {
       opacity: 1;
       pointer-events: auto;
+    }
+    #notification img {
+      max-height: 40px;
+      max-width: 40px;
+      border-radius: 4px;
+      object-fit: contain;
+      box-shadow: 0 0 6px rgba(74, 144, 226, 0.7);
     }
   </style>
 </head>
@@ -308,14 +342,23 @@
     }
 
     // Show notification message
-    function showNotification(message) {
+    function showNotification(message, coverImageUrl = null) {
       const notif = document.getElementById('notification');
-      notif.textContent = message;
+      notif.innerHTML = '';
+      if (coverImageUrl) {
+        const img = document.createElement('img');
+        img.src = coverImageUrl;
+        img.alt = "Album cover";
+        notif.appendChild(img);
+      }
+      const text = document.createElement('span');
+      text.textContent = message;
+      notif.appendChild(text);
       notif.classList.add('show');
       clearTimeout(notif._timeout);
       notif._timeout = setTimeout(() => {
         notif.classList.remove('show');
-      }, 3000);
+      }, 3500);
     }
 
     // Tab switching with fade animation
@@ -383,17 +426,30 @@
       grid.innerHTML = '';
 
       albums.forEach((album, index) => {
+        const isAdded = collection.some(col => col.title === album.title && col.artist === album.artist && col.year === album.year);
         const card = document.createElement('div');
         card.className = 'album-card';
+        card.dataset.index = index;
+
+        let buttonHTML;
+        if (isSearch) {
+          if (isAdded) {
+            buttonHTML = `<button disabled style="background:#666666; cursor:default;">✔ Added</button>`;
+          } else {
+            // Use data-index attribute to find card in handler
+            buttonHTML = `<button onclick='handleAddButtonClick(this, ${JSON.stringify(album).replace(/'/g, "\\'").replace(/"/g, '&quot;')})'>Add</button>`;
+          }
+        } else {
+          buttonHTML = `<button onclick="removeFromCollection(${index}, this)">Remove</button>`;
+        }
+
         card.innerHTML = `
           <img src="${album.cover_image}" alt="${album.title}">
           <h3>${album.title}</h3>
           <p>${album.artist || 'Unknown Artist'}</p>
           <p>${album.year}</p>
           <p>${album.format.join(', ')}</p>
-          ${isSearch 
-            ? `<button onclick='handleAddButtonClick(this, ${JSON.stringify(album).replace(/'/g, "\\'").replace(/"/g, '&quot;')})'>Add</button>`
-            : `<button onclick="removeFromCollection(${index})">Remove</button>`}
+          ${buttonHTML}
         `;
         grid.appendChild(card);
       });
@@ -408,6 +464,12 @@
       setTimeout(() => {
         button.classList.remove('button-shake');
         card.classList.remove('pulse');
+
+        // Change button to disabled "Added" with checkmark
+        button.disabled = true;
+        button.style.background = '#666666';
+        button.style.cursor = 'default';
+        button.innerHTML = '✔ Added';
       }, 600);
 
       addToCollection(album);
@@ -419,12 +481,19 @@
       // No notification on add, per instructions
     }
 
-    function removeFromCollection(index) {
-      filteredCollection.splice(index, 1);
-      collection = [...filteredCollection];
-      saveCollection();
-      applyFilters();
-      showNotification('Album removed from your collection.');
+    function removeFromCollection(index, buttonElement) {
+      const grid = document.getElementById('userCollection');
+      const card = buttonElement.closest('.album-card');
+
+      card.classList.add('popout');
+
+      card.addEventListener('animationend', () => {
+        filteredCollection.splice(index, 1);
+        collection = [...filteredCollection];
+        saveCollection();
+        applyFilters();
+        showNotification('Album removed from your collection.');
+      }, { once: true });
     }
 
     function applyFilters() {
@@ -449,7 +518,7 @@
         return;
       }
       const album = pool[Math.floor(Math.random() * pool.length)];
-      showNotification(`🎲 Random Pick: ${album.title}`);
+      showNotification(`🎲 Random Pick: ${album.title}`, album.cover_image);
     }
 
     async function startScanner() {
@@ -490,12 +559,17 @@
         if (results.length) {
           displayAlbums(results, true);
         } else {
-          showNotification('No results found for barcode.');
+          showNotification('No albums found with that barcode.');
         }
-      } catch (e) {
-        showNotification('Error searching barcode.');
+      } catch {
+        showNotification('Error fetching album from barcode.');
       }
     }
+
+    // Initialize collection view on load
+    window.addEventListener('load', () => {
+      applyFilters();
+    });
   </script>
 </body>
 </html>
