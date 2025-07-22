@@ -93,7 +93,16 @@
       top: 3.5rem; /* to not jump behind tab bar */
     }
 
-    .grid {
+    /* Updated grid for two columns in collection view */
+    #userCollection.grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    /* Search grid remains the same (auto-fit minmax) */
+    #catalogue.grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 1rem;
@@ -149,6 +158,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
+      transition: transform 0.15s ease;
     }
 
     .button-shake {
@@ -161,6 +171,7 @@
       gap: 0.5rem;
       justify-content: center;
       margin-bottom: 1rem;
+      align-items: center;
     }
 
     .search-controls input,
@@ -210,9 +221,9 @@
         font-size: 1.1rem;
         padding: 0.7rem 1rem;
       }
-      .grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.2rem;
+      /* Two columns also on mobile for collection */
+      #userCollection.grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
 
@@ -289,6 +300,34 @@
       object-fit: contain;
       box-shadow: 0 0 6px rgba(74, 144, 226, 0.7);
     }
+
+    /* Sort dropdown styling */
+    #sortControls {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    #sortControls label {
+      font-weight: bold;
+      font-size: 1rem;
+      align-self: center;
+    }
+    #sortSelect {
+      background-color: #444444;
+      color: var(--white);
+      border: none;
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.15s ease;
+    }
+    #sortSelect:hover {
+      background-color: #555555;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -303,8 +342,8 @@
   <div class="container" id="searchView">
     <div class="search-controls">
       <input type="text" id="searchInput" placeholder="Search albums, artists, genres...">
-      <button onclick="searchAlbums()">Search</button>
-      <button onclick="startScanner()">Scan Barcode</button>
+      <button onclick="buttonAnimate(this); searchAlbums()">Search</button>
+      <button onclick="buttonAnimate(this); startScanner()">Scan Barcode</button>
     </div>
     <video id="video" autoplay muted playsinline></video>
     <div class="grid" id="catalogue"></div>
@@ -315,9 +354,23 @@
       <input type="text" id="filterArtist" placeholder="Filter by Artist">
       <input type="text" id="filterGenre" placeholder="Filter by Genre">
       <input type="text" id="filterFormat" placeholder="Filter by Format">
-      <button onclick="applyFilters()">Apply</button>
-      <button onclick="pickRandomAlbum()">Pick Random</button>
+      <button onclick="buttonAnimate(this); applyFilters()">Apply</button>
+      <button onclick="buttonAnimate(this); pickRandomAlbum()">Pick Random</button>
     </div>
+
+    <!-- Sort controls added -->
+    <div id="sortControls">
+      <label for="sortSelect">Sort by:</label>
+      <select id="sortSelect" onchange="buttonAnimate(this); applySort()">
+        <option value="title_asc">Title (A → Z)</option>
+        <option value="title_desc">Title (Z → A)</option>
+        <option value="year_asc">Year (Oldest → Newest)</option>
+        <option value="year_desc">Year (Newest → Oldest)</option>
+        <option value="artist_asc">Artist (A → Z)</option>
+        <option value="artist_desc">Artist (Z → A)</option>
+      </select>
+    </div>
+
     <div class="grid" id="userCollection"></div>
   </div>
 
@@ -359,6 +412,15 @@
       notif._timeout = setTimeout(() => {
         notif.classList.remove('show');
       }, 3500);
+    }
+
+    // Small button animation on click
+    function buttonAnimate(button) {
+      if (!button) return;
+      button.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        button.style.transform = '';
+      }, 150);
     }
 
     // Tab switching with fade animation
@@ -425,6 +487,10 @@
       const grid = isSearch ? document.getElementById('catalogue') : document.getElementById('userCollection');
       grid.innerHTML = '';
 
+      // Add class grid for layout adjustments
+      if (!isSearch) grid.classList.add('grid');
+      else grid.classList.add('grid');
+
       albums.forEach((album, index) => {
         const isAdded = collection.some(col => col.title === album.title && col.artist === album.artist && col.year === album.year);
         const card = document.createElement('div');
@@ -437,10 +503,10 @@
             buttonHTML = `<button disabled style="background:#666666; cursor:default;">✔ Added</button>`;
           } else {
             // Use data-index attribute to find card in handler
-            buttonHTML = `<button onclick='handleAddButtonClick(this, ${JSON.stringify(album).replace(/'/g, "\\'").replace(/"/g, '&quot;')})'>Add</button>`;
+            buttonHTML = `<button onclick='buttonAnimate(this); handleAddButtonClick(this, ${JSON.stringify(album).replace(/'/g, "\\'").replace(/"/g, '&quot;')})'>Add</button>`;
           }
         } else {
-          buttonHTML = `<button onclick="removeFromCollection(${index}, this)">Remove</button>`;
+          buttonHTML = `<button onclick="buttonAnimate(this); removeFromCollection(${index}, this)">Remove</button>`;
         }
 
         card.innerHTML = `
@@ -492,7 +558,6 @@
         collection = [...filteredCollection];
         saveCollection();
         applyFilters();
-        showNotification('Album removed from your collection.');
       }, { once: true });
     }
 
@@ -503,9 +568,34 @@
 
       filteredCollection = collection.filter(album => {
         const genreMatch = genre ? album.genre.some(g => g.toLowerCase().includes(genre)) : true;
-        const artistMatch = artist ? album.title.toLowerCase().includes(artist) : true;
+        const artistMatch = artist ? album.artist.toLowerCase().includes(artist) : true;
         const formatMatch = format ? album.format.some(f => f.toLowerCase().includes(format)) : true;
         return genreMatch && artistMatch && formatMatch;
+      });
+
+      applySort();
+    }
+
+    function applySort() {
+      const sortValue = document.getElementById('sortSelect').value;
+
+      filteredCollection.sort((a, b) => {
+        switch(sortValue) {
+          case 'title_asc':
+            return a.title.localeCompare(b.title);
+          case 'title_desc':
+            return b.title.localeCompare(a.title);
+          case 'year_asc':
+            return (a.year === 'Unknown Year' ? 9999 : a.year) - (b.year === 'Unknown Year' ? 9999 : b.year);
+          case 'year_desc':
+            return (b.year === 'Unknown Year' ? 0 : b.year) - (a.year === 'Unknown Year' ? 0 : a.year);
+          case 'artist_asc':
+            return a.artist.localeCompare(b.artist);
+          case 'artist_desc':
+            return b.artist.localeCompare(a.artist);
+          default:
+            return 0;
+        }
       });
 
       displayAlbums(filteredCollection, false);
@@ -513,11 +603,10 @@
 
     function pickRandomAlbum() {
       const pool = filteredCollection.length ? filteredCollection : collection;
-      if (pool.length === 0) {
-        showNotification("No albums to pick from.");
-        return;
-      }
+      if (pool.length === 0) return showNotification("No albums to pick from.");
+
       const album = pool[Math.floor(Math.random() * pool.length)];
+
       showNotification(`🎲 Random Pick: ${album.title}`, album.cover_image);
     }
 
