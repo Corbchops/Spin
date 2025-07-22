@@ -230,6 +230,31 @@
       40%, 80% { transform: translateX(6px); }
     }
 
+    /* Notification container and style */
+    #notification {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333333;
+      color: var(--white);
+      padding: 1rem 1.5rem;
+      border-radius: 6px;
+      box-shadow: 0 0 15px rgba(74, 144, 226, 0.7);
+      font-weight: 600;
+      font-size: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 9999;
+      max-width: 90vw;
+      text-align: center;
+      user-select: none;
+    }
+    #notification.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body>
@@ -262,6 +287,8 @@
     <div class="grid" id="userCollection"></div>
   </div>
 
+  <div id="notification"></div>
+
   <script>
     const DISCOGS_API_KEY = 'YbIoxUTjiOnwgWuNEptY';
     const DISCOGS_API_SECRET = 'ytOUDXwTosfGwtkkOQQpYYtevZWCBufF';
@@ -278,6 +305,17 @@
 
     function saveCollection() {
       localStorage.setItem('music_collection', JSON.stringify(collection));
+    }
+
+    // Show notification message
+    function showNotification(message) {
+      const notif = document.getElementById('notification');
+      notif.textContent = message;
+      notif.classList.add('show');
+      clearTimeout(notif._timeout);
+      notif._timeout = setTimeout(() => {
+        notif.classList.remove('show');
+      }, 3000);
     }
 
     // Tab switching with fade animation
@@ -314,26 +352,30 @@
       const query = document.getElementById('searchInput').value.trim();
       if (!query) return;
 
-      const response = await axiosInstance.get('/database/search', {
-        params: {
-          q: query,
-          type: 'release',
-          per_page: 20,
-          key: DISCOGS_API_KEY,
-          secret: DISCOGS_API_SECRET,
-        },
-      });
+      try {
+        const response = await axiosInstance.get('/database/search', {
+          params: {
+            q: query,
+            type: 'release',
+            per_page: 20,
+            key: DISCOGS_API_KEY,
+            secret: DISCOGS_API_SECRET,
+          },
+        });
 
-      const albums = response.data.results.map(r => ({
-        title: r.title || 'Unknown Title',
-        year: r.year || 'Unknown Year',
-        genre: r.genre || [],
-        artist: r.artist || 'Unknown Artist',
-        format: r.format || [],
-        cover_image: r.cover_image || 'https://via.placeholder.com/100x100',
-      }));
+        const albums = response.data.results.map(r => ({
+          title: r.title || 'Unknown Title',
+          year: r.year || 'Unknown Year',
+          genre: r.genre || [],
+          artist: r.artist || 'Unknown Artist',
+          format: r.format || [],
+          cover_image: r.cover_image || 'https://via.placeholder.com/100x100',
+        }));
 
-      displayAlbums(albums, true);
+        displayAlbums(albums, true);
+      } catch {
+        showNotification('Error occurred while searching.');
+      }
     }
 
     function displayAlbums(albums, isSearch = false) {
@@ -374,7 +416,7 @@
     function addToCollection(album) {
       collection.push(album);
       saveCollection();
-      alert(`Added: ${album.title}`);
+      // No notification on add, per instructions
     }
 
     function removeFromCollection(index) {
@@ -382,6 +424,7 @@
       collection = [...filteredCollection];
       saveCollection();
       applyFilters();
+      showNotification('Album removed from your collection.');
     }
 
     function applyFilters() {
@@ -401,9 +444,12 @@
 
     function pickRandomAlbum() {
       const pool = filteredCollection.length ? filteredCollection : collection;
-      if (pool.length === 0) return alert("No albums to pick from.");
+      if (pool.length === 0) {
+        showNotification("No albums to pick from.");
+        return;
+      }
       const album = pool[Math.floor(Math.random() * pool.length)];
-      alert(`🎲 Random Pick: ${album.title}`);
+      showNotification(`🎲 Random Pick: ${album.title}`);
     }
 
     async function startScanner() {
@@ -417,7 +463,7 @@
           }
         });
       } catch (error) {
-        alert('Unable to access camera.');
+        showNotification('Unable to access camera.');
       }
     }
 
@@ -444,10 +490,10 @@
         if (results.length) {
           displayAlbums(results, true);
         } else {
-          alert('No results found for barcode.');
+          showNotification('No results found for barcode.');
         }
       } catch (e) {
-        alert('Error searching barcode.');
+        showNotification('Error searching barcode.');
       }
     }
   </script>
