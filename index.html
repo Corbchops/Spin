@@ -540,20 +540,34 @@ video:hover {
       }, { once: true });
     }
 
-    function applyFilters() {
-      const genre = document.getElementById('filterGenre').value.trim().toLowerCase();
-      const artist = document.getElementById('filterArtist').value.trim().toLowerCase();
-      const format = document.getElementById('filterFormat').value.trim().toLowerCase();
+   function applyFilters() {
+  const genreInput = document.getElementById('filterGenre').value.trim().toLowerCase();
+  const artistInput = document.getElementById('filterArtist').value.trim().toLowerCase();
+  const formatInput = document.getElementById('filterFormat').value.trim().toLowerCase();
 
-      filteredCollection = collection.filter(album => {
-        const genreMatch = genre ? album.genre.some(g => g.toLowerCase().includes(genre)) : true;
-        const artistMatch = artist ? album.title.toLowerCase().includes(artist) : true;
-        const formatMatch = format ? album.format.some(f => f.toLowerCase().includes(format)) : true;
-        return genreMatch && artistMatch && formatMatch;
-      });
+  filteredCollection = collection.filter(album => {
+    // Genre matching: split input into words, all must match at least one genre item
+    const genreMatch = genreInput
+      ? genreInput.split(/\s+/).every(word =>
+          album.genre.some(g => g.toLowerCase().includes(word))
+        )
+      : true;
 
-      displayAlbums(filteredCollection, false);
-    }
+    // Artist matching - corrected to check artist instead of title
+    const artistMatch = artistInput
+      ? album.artist.toLowerCase().includes(artistInput)
+      : true;
+
+    // Format matching remains the same
+    const formatMatch = formatInput
+      ? album.format.some(f => f.toLowerCase().includes(formatInput))
+      : true;
+
+    return genreMatch && artistMatch && formatMatch;
+  });
+
+  displayAlbums(filteredCollection, false);
+}
 
     function pickRandomAlbum() {
       const pool = filteredCollection.length ? filteredCollection : collection;
